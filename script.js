@@ -14,7 +14,14 @@ const marketData = {
 //document.getElementById("ethereum-value").textContent = marketData.ethereum;
 
 for (let key in marketData) {
-    document.getElementById(key + "-value").textContent = marketData[key];
-
+    const element = document.getElementById(key + "-value");
+    element.textContent = marketData[key];
+    if (marketData[key].startsWith("+")) {
+         element.style.color = "lime";  
+    } else if (marketData[key].startsWith("-")) {
+        element.style.color = "red";
+    } else {
+        element.style.color = "white";
+    }       
 }
 console.log(marketData);
