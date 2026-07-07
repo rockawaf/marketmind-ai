@@ -73,5 +73,38 @@ function loadPrices() {
     });
 }
 
-loadPrices();
+const alphaKey = "YOUR_API_KEY";
+
+function loadSP500() {
+
+  fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=SPY&apikey=${alphaKey}`)
+    .then(response => response.json())
+    .then(data => {
+
+      console.log("Alpha Vantage SPY data:", data);
+
+      const sp500Element = document.getElementById("sp500-value");
+
+      const change =
+        data["Global Quote"]["10. change percent"];
+
+      const numericChange = parseFloat(change);
+
+      sp500Element.textContent = change;
+
+      if (numericChange > 0) {
+        sp500Element.style.color = "lime";
+      } else if (numericChange < 0) {
+        sp500Element.style.color = "red";
+      } else {
+        sp500Element.style.color = "white";
+      }
+
+    });
+
+}
+loadPrices();       // CoinGecko
+loadSP500();        // Alpha Vantage        
+
 setInterval(loadPrices, 30000);
+setInterval(loadSP500, 30000);
