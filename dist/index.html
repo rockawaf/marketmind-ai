@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarketMind AI</title>
+  <script type="module" crossorigin src="/assets/index-qiPvAEYE.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DiinBI2o.css">
+</head>
+
+<body>
+
+<nav class="navbar">
+  <div class="logo">MarketMind AI</div>
+
+  <div class="nav-links">
+    <a href="#">Home</a>
+    <a href="#features">Features</a>
+    <a href="#">Markets</a>
+    <a href="#">About</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-text">
+    <p class="badge">AI-Powered Market Intelligence</p>
+    <h1>Understand markets faster with AI.</h1>
+    <p class="subtitle">
+      MarketMind AI explains market moves, stocks, crypto, and macro trends in simple language.
+    </p>
+    <button>Explore Platform</button>
+    <p id="message"></p>
+  </div>
+
+  <div class="market-card">
+    <h3>Market Pulse</h3>
+    <p>S&P 500: +0.42%</p>
+    <p>Nasdaq: +0.61%</p>
+    <p>ETH: +1.84%</p>
+    <span>AI Summary: Risk appetite improving.</span>
+  </div>
+</section>
+<section class="market-pulse">
+
+    <h2>Today's Market Pulse</h2>
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <h3>📈 S&P 500</h3>
+            <p id="pulse-sp500-value">Loading...</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🪙 Bitcoin</h3>
+            <p id="bitcoin-price">Loading...</p>
+            <p id="bitcoin-change"></p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>💻 Nasdaq</h3>
+            <p id="pulse-nasdaq-value">Loading...</p>
+            
+        </div>
+
+        <div class="dashboard-card">
+            <h3>💎 Ethereum</h3>
+            <p id="pulse-ethereum-price">Loading...</p>
+            <p id="pulse-ethereum-change"></p>
+        </div>
+
+    </div>
+
+</section>
+<section class="ai-summary">
+
+    <div class="summary-box">
+
+        <p class="badge">🤖 AI Market Analyst</p>
+
+        <h2>Today's AI Market Insight</h2>
+
+        <div id="market-summary">
+
+            <p>Loading AI analysis...</p>
+
+        </div>
+
+    </div>
+
+</section>
+
+<section class="market-dashboard">
+  <section class="market-news">
+
+    <h2>Latest Market News</h2>
+
+    <div id="news-container">
+
+        <p>Loading market news...</p>
+
+    </div>
+
+</section>
+<section class="trending-stocks">
+
+    <h2>📈 Trending Stocks</h2>
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <h3>🍎 Apple</h3>
+            <p id="aapl-price">Loading...</p>
+            <p id="aapl-change"></p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🟢 Nvidia</h3>
+            <p id="nvda-price">Loading...</p>
+            <p id="nvda-change"></p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🪟 Microsoft</h3>
+            <p id="msft-price">Loading...</p>
+            <p id="msft-change"></p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🔍 Google</h3>
+            <p id="goog-price">Loading...</p>
+            <p id="goog-change"></p>
+        </div>
+
+    </div>
+
+</section>
+
+<section class="market-sentiment">
+
+    <h2>😱 Market Sentiment</h2>
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <h3>Fear & Greed Index</h3>
+
+            <p id="fear-value">Loading...</p>
+
+            <span id="fear-label"></span>
+
+        </div>
+
+    </div>
+
+</section>
+
+<section class="macro-dashboard">
+    <h2>🌎 Macro Dashboard</h2>
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <h3>🪙 Gold</h3>
+            <p id="gold-price">Loading...</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🛢 Brent Oil</h3>
+            <p id="oil-price">Loading...</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>💵 US Dollar</h3>
+            <p id="dxy-price">Loading...</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>📉 VIX</h3>
+            <p id="vix-price">Loading...</p>
+        </div>
+
+    </div>
+</section>
+
+    <h2>Market Dashboard</h2>
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <h3>📈 S&P 500</h3>
+            <p id="sp500-value"></p>
+            <span>US large-cap stocks</span>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>💻 Nasdaq</h3>
+            <p id="nasdaq-value"></p>
+            <span>Technology sector</span>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🏦 10-Years Treasury</h3>
+            <p id="treasury-value"></p>
+            <span>Interest rates</span>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>🛢 Brent Oil</h3>
+            <p id="brent-value"></p>
+            <span>Energy prices</span>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>📊 Inflation</h3>
+            <p id="inflation-value"></p>
+            <span>CPI (Example)</span>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>💎 Ethereum</h3>
+            <p id="ethereum-price">Loading...</p>
+            <p id="ethereum-change"></p>
+            <span>Digital assets</span>
+        </div>
+
+    </div>
+
+</section>
+<section class="features" id="features">
+  <h2>Why MarketMind AI?</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>📈 Live Markets</h3>
+      <p>Track stocks, ETFs, crypto and commodities in real time.</p>
+    </div>
+
+    <div class="card">
+      <h3>🤖 AI Explanations</h3>
+      <p>Understand why markets moved today using simple language.</p>
+    </div>
+
+    <div class="card">
+      <h3>🧠 Smarter Investing</h3>
+      <p>Transform complex financial data into actionable insights.</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

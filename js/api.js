@@ -2,120 +2,141 @@
 // Crypto prices — CoinGecko
 // ===============================
 
-function loadPrices() {
-  const url =
-    "https://api.coingecko.com/api/v3/simple/price" +
-    "?ids=bitcoin,ethereum,dogecoin" +
-    "&vs_currencies=usd" +
-    "&include_24hr_change=true";
+import { $, setText, setColor, setPercent, fetchJSON } from "./dom.js";
+import { marketState } from "./state.js";
 
-  fetchJSON(url)
+let marketRequest = null;
+
+function getMarketData() {
+  if (!marketRequest) {
+    marketRequest = fetchJSON("http://localhost:3000/api/market")
+      .catch(error => {
+        marketRequest = null;
+        throw error;
+      });
+  }
+
+  return marketRequest;
+}
+
+
+export function loadPrices() {
+  getMarketData()
     .then(data => {
-      const coins = Object.keys(data);
+      const bitcoin = data?.crypto?.bitcoin;
+      const ethereum = data?.crypto?.ethereum;
 
-      for (const coin of coins) {
-        const coinData = data[coin];
-
-        if (
-          typeof coinData?.usd !== "number" ||
-          typeof coinData?.usd_24h_change !== "number"
-        ) {
-          continue;
-        }
-
-        const price = coinData.usd;
-        const change = coinData.usd_24h_change;
-
-        const priceElement = $(coin + "-price");
-        const changeElement = $(coin + "-change");
-
-        const pulsePriceElement = $("pulse-" + coin + "-price");
-        const pulseChangeElement = $("pulse-" + coin + "-change");
-
-        if (priceElement) {
-          priceElement.textContent = "$" + price.toLocaleString();
-        }
-
-        if (pulsePriceElement) {
-          pulsePriceElement.textContent = "$" + price.toLocaleString();
-        }
-
-        setPercent(changeElement, change);
-        setPercent(pulseChangeElement, change);
+      if (
+        !Number.isFinite(bitcoin?.usd) ||
+        !Number.isFinite(bitcoin?.usd_24h_change) ||
+        !Number.isFinite(ethereum?.usd) ||
+        !Number.isFinite(ethereum?.usd_24h_change)
+      ) {
+        throw new Error("Invalid crypto data returned");
       }
 
-      marketState.btcChange = data.bitcoin.usd_24h_change;
-      marketState.ethChange = data.ethereum.usd_24h_change;
+      setText(
+        "bitcoin-price",
+        `$${bitcoin.usd.toLocaleString()}`
+      );
 
-      generateAIInsight();
+      setText(
+        "ethereum-price",
+        `$${ethereum.usd.toLocaleString()}`
+      );
+
+      setText(
+        "pulse-bitcoin-price",
+        `$${bitcoin.usd.toLocaleString()}`
+      );
+
+      setText(
+        "pulse-ethereum-price",
+        `$${ethereum.usd.toLocaleString()}`
+      );
+
+      setPercent(
+        $("bitcoin-change"),
+        bitcoin.usd_24h_change
+      );
+
+      setPercent(
+        $("ethereum-change"),
+        ethereum.usd_24h_change
+      );
+
+      setPercent(
+        $("pulse-bitcoin-change"),
+        bitcoin.usd_24h_change
+      );
+
+      setPercent(
+        $("pulse-ethereum-change"),
+        ethereum.usd_24h_change
+      );
+
+      marketState.btcChange = bitcoin.usd_24h_change;
+      marketState.ethChange = ethereum.usd_24h_change;
     })
     .catch(error => {
       console.error("Crypto loading error:", error);
 
       setText("bitcoin-price", "Unavailable");
       setText("ethereum-price", "Unavailable");
-      setText("dogecoin-price", "Unavailable");
-
       setText("pulse-bitcoin-price", "Unavailable");
       setText("pulse-ethereum-price", "Unavailable");
     });
 }
 
-
-// ===============================
-// Backend quote helper
-// ===============================
-
-function getQuote(symbol) {
-  const encodedSymbol = encodeURIComponent(symbol);
-
-  return fetchJSON(
-    `http://localhost:3000/api/quote?symbol=${encodedSymbol}`
-  );
-}
-
-
 // ===============================
 // S&P 500 and Nasdaq proxies
 // ===============================
 
-function updateIndexCards(symbol, elementIds) {
-  getQuote(symbol)
+
+export function loadSP500() {
+  getMarketData()
     .then(data => {
-      const hasValidChange =
-        typeof data.dp === "number" &&
-        Number.isFinite(data.dp);
+      const change = Number(data?.stocks?.sp500?.dp);
 
-      if (!hasValidChange) {
-        throw new Error(`No valid quote data returned for ${symbol}`);
+      if (!Number.isFinite(change)) {
+        throw new Error("Invalid S&P 500 data returned");
       }
 
-      for (const id of elementIds) {
-        setPercent($(id), data.dp);
-      }
+      setPercent($("sp500-value"), change);
+      setPercent($("pulse-sp500-value"), change);
     })
     .catch(error => {
-      console.error(`${symbol} loading error:`, error);
+      console.error("S&P 500 loading error:", error);
 
-      for (const id of elementIds) {
-        setText(id, "Unavailable");
-        setColor(id, "white");
-      }
+      setText("sp500-value", "Unavailable");
+      setText("pulse-sp500-value", "Unavailable");
+
+      setColor("sp500-value", "white");
+      setColor("pulse-sp500-value", "white");
     });
 }
 
-function loadSP500() {
-  updateIndexCards("SPY", [
-    "sp500-value",
-    "pulse-sp500-value"
-  ]);
-}
+export function loadNasdaq() {
+  getMarketData()
+    .then(data => {
+      const change = Number(data?.stocks?.nasdaq?.dp);
 
-function loadNasdaq() {
-  updateIndexCards("QQQ", [
-    "nasdaq-value",
-    "pulse-nasdaq-value"
-  ]);
+      if (!Number.isFinite(change)) {
+        throw new Error("Invalid Nasdaq data returned");
+      }
+
+      setPercent($("nasdaq-value"), change);
+      setPercent($("pulse-nasdaq-value"), change);
+    })
+    .catch(error => {
+      console.error("Nasdaq loading error:", error);
+
+      setText("nasdaq-value", "Unavailable");
+      setText("pulse-nasdaq-value", "Unavailable");
+
+      setColor("nasdaq-value", "white");
+      setColor("pulse-nasdaq-value", "white");
+    });
 }
 
 
@@ -123,7 +144,7 @@ function loadNasdaq() {
 // Fear & Greed Index
 // ===============================
 
-function loadFearGreed() {
+export function loadFearGreed() {
   fetchJSON("https://api.alternative.me/fng/?limit=1")
     .then(data => {
       const result = data?.data?.[0];
@@ -161,7 +182,7 @@ function loadFearGreed() {
         }
       }
 
-      generateAIInsight();
+      
     })
     .catch(error => {
       console.error("Fear & Greed loading error:", error);
@@ -173,86 +194,86 @@ function loadFearGreed() {
 
 
 // ===============================
-// Macro assets
+// Macro and commodities — unified market endpoint
 // ===============================
 
-function loadMacroData() {
-  const macroAssets = [
-    { symbol: "GLD", id: "gold-price" },
-    { symbol: "BNO", id: "oil-price" },
-    { symbol: "UUP", id: "dxy-price" },
-    { symbol: "VXX", id: "vix-price" }
-  ];
+export function loadMacroData() {
+  getMarketData()
+    .then(data => {
+      const treasury = Number(data?.macro?.treasury10y?.value);
+      const inflation = Number(data?.macro?.inflationRate?.value);
+      const dollar = Number(data?.macro?.broadDollar?.value);
+      const vix = Number(data?.macro?.vix?.value);
 
-  for (const asset of macroAssets) {
-    getQuote(asset.symbol)
-      .then(data => {
-        const hasValidPrice =
-          typeof data.c === "number" &&
-          Number.isFinite(data.c) &&
-          data.c > 0;
+      const brent = Number(data?.commodities?.brent?.value);
+      const gold = Number(data?.commodities?.gold?.price);
 
-        if (hasValidPrice) {
-          setText(asset.id, `$${data.c.toFixed(2)}`);
-        } else {
-          setText(asset.id, "Unavailable");
-        }
-      })
-      .catch(error => {
-        console.error(`${asset.symbol} loading error:`, error);
-        setText(asset.id, "Unavailable");
-      });
-  }
+      setText(
+        "treasury-value",
+        Number.isFinite(treasury)
+          ? `${treasury.toFixed(2)}%`
+          : "Unavailable"
+      );
+
+      setText(
+        "inflation-value",
+        Number.isFinite(inflation)
+          ? `${inflation.toFixed(2)}%`
+          : "Unavailable"
+      );
+
+      setText(
+        "dxy-price",
+        Number.isFinite(dollar)
+          ? dollar.toFixed(2)
+          : "Unavailable"
+      );
+
+      setText(
+        "vix-price",
+        Number.isFinite(vix)
+          ? vix.toFixed(2)
+          : "Unavailable"
+      );
+
+      setText(
+        "oil-price",
+        Number.isFinite(brent)
+          ? `$${brent.toFixed(2)}`
+          : "Unavailable"
+      );
+
+      setText(
+        "gold-price",
+        Number.isFinite(gold)
+          ? `$${gold.toFixed(2)}`
+          : "Unavailable"
+      );
+    })
+    .catch(error => {
+      console.error("Market data loading error:", error);
+
+      setText("treasury-value", "Unavailable");
+      setText("inflation-value", "Unavailable");
+      setText("dxy-price", "Unavailable");
+      setText("vix-price", "Unavailable");
+      setText("oil-price", "Unavailable");
+      setText("gold-price", "Unavailable");
+    });
 }
 
 
+
 // ===============================
-// Trending stocks
+// MarketMind Intelligence
 // ===============================
 
-function loadTrendingStocks() {
-  const stocks = [
-    { symbol: "AAPL", id: "aapl" },
-    { symbol: "NVDA", id: "nvda" },
-    { symbol: "MSFT", id: "msft" },
-    { symbol: "GOOG", id: "goog" }
-  ];
+export async function loadMarketIntelligence() {
+  const data = await getMarketData();
 
-  for (const stock of stocks) {
-    getQuote(stock.symbol)
-      .then(data => {
-        const priceElement = $(stock.id + "-price");
-        const changeElement = $(stock.id + "-change");
-
-        if (!priceElement || !changeElement) return;
-
-        const hasValidPrice =
-          typeof data.c === "number" &&
-          Number.isFinite(data.c) &&
-          data.c > 0;
-
-        const hasValidChange =
-          typeof data.dp === "number" &&
-          Number.isFinite(data.dp);
-
-        if (!hasValidPrice || !hasValidChange) {
-          setText(stock.id + "-price", "Unavailable");
-          setText(stock.id + "-change", "");
-          return;
-        }
-
-        setText(
-          stock.id + "-price",
-          `$${data.c.toFixed(2)}`
-        );
-
-        setPercent(changeElement, data.dp);
-      })
-      .catch(error => {
-        console.error(`${stock.symbol} loading error:`, error);
-
-        setText(stock.id + "-price", "Unavailable");
-        setText(stock.id + "-change", "");
-      });
+  if (!data?.intelligence) {
+    throw new Error("No market intelligence returned");
   }
+
+  return data.intelligence;
 }

@@ -1,6 +1,6 @@
-const $ = (id) => document.getElementById(id);
+export const $ = (id) => document.getElementById(id);
 
-function setText(id, text) {
+export function setText(id, text) {
   const element = $(id);
 
   if (element) {
@@ -8,7 +8,7 @@ function setText(id, text) {
   }
 }
 
-function setColor(id, color) {
+export function setColor(id, color) {
   const element = $(id);
 
   if (element) {
@@ -16,7 +16,7 @@ function setColor(id, color) {
   }
 }
 
-function setPercent(element, value) {
+export function setPercent(element, value) {
   if (!element) return;
 
   if (value > 0) {
@@ -31,6 +31,6 @@ function setPercent(element, value) {
   }
 }
 
-function fetchJSON(url) {
-  return fetch(url).then((response) => response.json());
+export function fetchJSON(url) {
+  return fetch(url).then(response => response.json());
 }

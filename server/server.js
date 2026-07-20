@@ -3,6 +3,10 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
+const {
+  generateMarketSummary,
+} = require("./services/marketIntelligence");
+
 const app = express();
 
 app.use(cors());
@@ -12,37 +16,243 @@ app.get("/api/quote", async (req, res) => {
 
   if (!symbol) {
     return res.status(400).json({
-      error: "A symbol is required"
+      error: "A symbol is required",
     });
   }
 
   try {
-    const url =
-      `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}` +
-      `&token=${process.env.FINNHUB_KEY}`;
+    const data = await fetchQuote(symbol);
+    res.json(data);
+  } catch (error) {
+    console.error(`Quote error for ${symbol}:`, error.message);
 
-    const response = await fetch(url);
+    res.status(500).json({
+      error: `Unable to fetch ${symbol}`,
+    });
+  }
+});
+
+app.get("/api/news", async (req, res) => {
+  try {
+    const response = await fetch(
+      `https://finnhub.io/api/v1/news?category=general&token=${process.env.FINNHUB_KEY}`,
+    );
 
     if (!response.ok) {
-      console.error(`Finnhub failed for ${symbol}: ${response.status}`);
-
       return res.status(response.status).json({
-        error: `Finnhub request failed for ${symbol}`,
-        status: response.status
+        error: "Finnhub news request failed",
       });
     }
 
     const data = await response.json();
-
     res.json(data);
   } catch (error) {
-    console.error(`Server error for ${symbol}:`, error.message);
+    console.error("News error:", error.message);
 
     res.status(500).json({
-      error: `Unable to fetch ${symbol}`
+      error: "Unable to fetch market news",
     });
   }
 });
+
+async function fetchCryptoPrice(id) {
+  const response = await fetch(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`
+  );
+
+  if (!response.ok) {
+    throw new Error(`CoinGecko request failed for ${id}`);
+  }
+
+  const data = await response.json();
+
+  return data[id];
+}
+
+const { fetchQuote } = require("./services/finnhub");
+
+async function fetchGoldPrice() {
+  const response = await fetch(
+    `https://api.twelvedata.com/quote?symbol=${encodeURIComponent("XAU/USD")}&apikey=${process.env.TWELVEDATA_API_KEY}`
+  );
+
+  const data = await response.json();
+
+  return {
+    symbol: data.symbol,
+    name: data.name,
+    price: Number(data.close),
+    change: Number(data.change),
+    percentChange: Number(data.percent_change),
+    marketOpen: data.is_market_open,
+    timestamp: data.timestamp,
+  };
+}
+
+async function fetchLatestFredValue(seriesId) {
+  const params = new URLSearchParams({
+    series_id: seriesId,
+    api_key: process.env.FRED_API_KEY,
+    file_type: "json",
+    sort_order: "desc",
+    limit: "24",
+  });
+
+  const response = await fetch(
+    `https://api.stlouisfed.org/fred/series/observations?${params}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`FRED request failed for ${seriesId}: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  const observation = data.observations?.find(
+    (item) => item.value !== "." && Number.isFinite(Number(item.value)),
+  );
+
+  if (!observation) {
+    throw new Error(`No valid FRED value found for ${seriesId}`);
+  }
+
+  return {
+    value: Number(observation.value),
+    date: observation.date,
+    observations: data.observations,
+  };
+}
+
+function calculateInflationRate(observations) {
+  const valid = observations.filter(
+    (obs) => obs.value !== "." && Number.isFinite(Number(obs.value))
+  );
+
+  if (valid.length < 13) {
+    throw new Error("Not enough CPI observations.");
+  }
+
+  const current = Number(valid[0].value);
+  const lastYear = Number(valid[12].value);
+
+  const inflationRate =
+    ((current - lastYear) / lastYear) * 100;
+
+  return Number(inflationRate.toFixed(2));
+}
+
+
+app.get("/api/market", async (req, res) => {
+  try {
+     const [
+       treasury10y,
+       cpi,
+       broadDollar,
+       brent,
+       vix,
+       gold,
+       spy,
+       qqq,
+       bitcoinResult,
+       ethereumResult,
+     ] = await Promise.all([
+       fetchLatestFredValue("DGS10"),
+       fetchLatestFredValue("CPIAUCSL"),
+       fetchLatestFredValue("DTWEXBGS"),
+       fetchLatestFredValue("DCOILBRENTEU"),
+       fetchLatestFredValue("VIXCLS"),
+       fetchGoldPrice(),
+       fetchQuote("SPY"),
+       fetchQuote("QQQ"),
+
+       fetchCryptoPrice("bitcoin").catch(error => {
+         console.error("Bitcoin request failed:", error.message);
+         return null;
+       }),
+
+       fetchCryptoPrice("ethereum").catch(error => {
+         console.error("Ethereum request failed:", error.message);
+         return null;
+       }),
+    ]);
+
+    const bitcoin = bitcoinResult ?? {
+      usd: null,
+      usd_24h_change: null,
+    };
+
+    const ethereum = ethereumResult ?? {
+      usd: null,
+      usd_24h_change: null,
+    };
+
+    const stocks = {
+      sp500: spy,
+      nasdaq: qqq,
+    };
+
+    const crypto = {
+      bitcoin,
+      ethereum,
+    };
+
+    const macro = {
+      treasury10y: {
+        value: treasury10y.value,
+        date: treasury10y.date,
+      },
+      
+    inflationRate: {
+      value: calculateInflationRate(cpi.observations),
+       date: cpi.date,
+    },
+
+    broadDollar: {
+       value: broadDollar.value,
+       date: broadDollar.date,
+    },
+
+    vix: {
+      value: vix.value,
+       date: vix.date,
+    },
+  };
+
+  const commodities = {
+     gold,
+
+    brent: {
+      value: brent.value,
+      date: brent.date,
+    },
+  };
+
+  const intelligence = generateMarketSummary({
+    stocks,
+    crypto,
+     macro,
+     commodities,
+  });
+
+  res.json({
+    stocks,
+     crypto,
+     macro,
+    commodities,
+    intelligence,
+    news: [],
+    timestamp: new Date().toISOString(),
+  });
+} catch (error) {
+    console.error("Market endpoint error:", error.message);
+
+    res.status(500).json({
+      error: "Unable to load market data",
+    });
+  }
+});
+
+console.log("✅ Market route loaded");
 
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");

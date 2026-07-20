@@ -1,4 +1,6 @@
-function generateAIInsight() {
+import { marketState } from "./state.js";
+
+export function generateAIInsight() {
   const summary = document.getElementById("market-summary");
 
   if (!summary) return;

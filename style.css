@@ -397,3 +397,102 @@ button:hover{
 .news-card{
     cursor:pointer;
 }
+.intelligence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.intelligence-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.intelligence-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.intelligence-score {
+  text-align: right;
+}
+
+.intelligence-score strong {
+  font-size: 1.25rem;
+}
+
+.confidence-bar {
+  width: 100%;
+  height: 8px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+
+.intelligence-section {
+  margin-top: 1.5rem;
+}
+
+.intelligence-section h4 {
+  margin-bottom: 0.65rem;
+}
+
+.intelligence-section p {
+  line-height: 1.7;
+}
+
+.intelligence-reasons {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.intelligence-reasons li {
+  margin-bottom: 0.55rem;
+  line-height: 1.5;
+}
+
+.intelligence-highlights {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.intelligence-highlight {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.intelligence-highlight h4 {
+  margin: 0 0 0.4rem;
+}
+
+.intelligence-highlight p {
+  margin: 0;
+}
+
+.intelligence-highlight.positive {
+  border-left: 4px solid #22c55e;
+}
+
+.intelligence-highlight.warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.intelligence-highlight.negative {
+  border-left: 4px solid #ef4444;
+}
