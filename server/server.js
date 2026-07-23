@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 
 const {
-  generateMarketSummary,
+  buildMarketAnalysis,
 } = require("./services/marketIntelligence");
 
 const app = express();
@@ -55,19 +55,67 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
-async function fetchCryptoPrice(id) {
-  const response = await fetch(
-    `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`
-  );
+const cryptoCache = {
+  bitcoin: null,
+  ethereum: null,
+};
 
-  if (!response.ok) {
-    throw new Error(`CoinGecko request failed for ${id}`);
+const cryptoCacheTime = {
+  bitcoin: 0,
+  ethereum: 0,
+};
+const CRYPTO_CACHE_DURATION = 60_000; // 1 minute
+
+async function fetchCryptoPrice(id) {
+  const cacheIsFresh =
+    cryptoCache[id] &&
+    Date.now() - cryptoCacheTime[id] < CRYPTO_CACHE_DURATION;
+
+  if (cacheIsFresh) {
+    return cryptoCache[id];
   }
 
-  const data = await response.json();
+  try {
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`
+    );
 
-  return data[id];
+    if (!response.ok) {
+      throw new Error(
+        `CoinGecko request failed for ${id}: ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+    const crypto = data?.[id];
+
+    if (
+      !Number.isFinite(crypto?.usd) ||
+      !Number.isFinite(crypto?.usd_24h_change)
+    ) {
+      throw new Error(
+        `Invalid CoinGecko data returned for ${id}`
+      );
+    }
+
+    cryptoCache[id] = crypto;
+    cryptoCacheTime[id] = Date.now();
+
+    return crypto;
+  } catch (error) {
+    if (cryptoCache[id]) {
+      console.warn(
+        `Using cached ${id} data:`,
+        error.message
+      );
+
+      return cryptoCache[id];
+    }
+
+    throw error;
+  }
 }
+
 
 const { fetchQuote } = require("./services/finnhub");
 
@@ -141,6 +189,15 @@ function calculateInflationRate(observations) {
   return Number(inflationRate.toFixed(2));
 }
 
+async function fetchQuoteSafely(symbol) {
+  try {
+    return await fetchQuote(symbol);
+  } catch (error) {
+    console.error(`${symbol} quote failed:`, error.message);
+
+    return null;
+  }
+}
 
 app.get("/api/market", async (req, res) => {
   try {
@@ -153,6 +210,10 @@ app.get("/api/market", async (req, res) => {
        gold,
        spy,
        qqq,
+       aapl,
+       nvda,
+       msft,
+       googl,
        bitcoinResult,
        ethereumResult,
      ] = await Promise.all([
@@ -162,33 +223,54 @@ app.get("/api/market", async (req, res) => {
        fetchLatestFredValue("DCOILBRENTEU"),
        fetchLatestFredValue("VIXCLS"),
        fetchGoldPrice(),
+
        fetchQuote("SPY"),
        fetchQuote("QQQ"),
 
-       fetchCryptoPrice("bitcoin").catch(error => {
-         console.error("Bitcoin request failed:", error.message);
+       fetchQuoteSafely("AAPL"),
+       fetchQuoteSafely("NVDA"),
+       fetchQuoteSafely("MSFT"),
+       fetchQuoteSafely("GOOGL"),
+
+       fetchCryptoPrice("bitcoin").catch((error) => {
+         console.error(
+           "Bitcoin request failed:",
+           error.message
+         );
+
          return null;
        }),
 
-       fetchCryptoPrice("ethereum").catch(error => {
-         console.error("Ethereum request failed:", error.message);
+       fetchCryptoPrice("ethereum").catch((error) => {
+         console.error(
+           "Ethereum request failed:",
+           error.message
+         );
+
          return null;
        }),
-    ]);
+     ]);
 
-    const bitcoin = bitcoinResult ?? {
-      usd: null,
-      usd_24h_change: null,
-    };
+     const bitcoin = bitcoinResult ?? {
+       usd: null,
+       usd_24h_change: null,
+     };
 
-    const ethereum = ethereumResult ?? {
-      usd: null,
-      usd_24h_change: null,
-    };
+     const ethereum = ethereumResult ?? {
+       usd: null,
+       usd_24h_change: null,
+     };
 
     const stocks = {
       sp500: spy,
       nasdaq: qqq,
+
+      trending: {
+        aapl,
+        nvda,
+        msft,
+        googl,
+      },
     };
 
     const crypto = {
@@ -227,7 +309,7 @@ app.get("/api/market", async (req, res) => {
     },
   };
 
-  const intelligence = generateMarketSummary({
+  const intelligence = buildMarketAnalysis({
     stocks,
     crypto,
      macro,
